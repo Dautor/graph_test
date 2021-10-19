@@ -23,7 +23,9 @@ struct token
     {
         NONE,
         NAME,
+        STRING,
         COMMA,
+        COLON,
         BRACE_LEFT,
         BRACE_RIGHT,
         Count,
@@ -32,21 +34,20 @@ struct token
     static constexpr char const *const KindNames[(u32)kind::Count] =
     {
 #define _(x) [(u32)kind::x]
+        _(NONE)        = "EOF",
+        _(NAME)        = "NAME",
+        _(STRING)      = "STRING",
+        _(COMMA)       = ",",
+        _(COLON)       = ":",
         _(BRACE_LEFT)  = "{",
         _(BRACE_RIGHT) = "}",
-        _(COMMA)       = ",",
-        _(NAME)        = "NAME",
 #undef _
     };
     
-    
     union
     {
-        struct
-        {
-            char const *_;
-            s32 Length;
-        } NAME;
+        struct { char const *_; s32 Length; } NAME;
+        struct { char const *_; s32 Length; } STRING;
     };
 };
 

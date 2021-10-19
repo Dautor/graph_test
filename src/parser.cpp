@@ -19,6 +19,42 @@ parser Parser;
 token const &Token = Parser.Token;
 
 // INTERNAL PROCEDURES //------------------------------------------------------------
+
+static void
+ScanStr()
+{
+    auto &Token     = Parser.Token;
+    auto &At        = Parser.At;
+    auto &LineStart = Parser.LineStart;
+    assert(*At == '"');
+    auto Start = ++At;
+    while(*At && *At != '"')
+    {
+        char Val = *At;
+        if(Val == '\n')
+        {
+            FatalErrorHere("[L] String literal cannot contain newline");
+        } else if(Val == '\\')
+        {
+            FatalErrorHere("[L] String escaping not supported yet");
+        } else
+        {
+            ++At;
+        }
+    }
+    if(*At)
+    {
+        assert(*At == '"');
+        ++At;
+    } else
+    {
+        FatalErrorHere("[L] Unexpected end of file within string literal");
+    }
+    Token.Kind          = token::kind::STRING;
+    Token.STRING._      = Start;
+    Token.STRING.Length = At-Start-1;
+}
+
 // PROCEDURES //---------------------------------------------------------------------
 
 void
@@ -69,6 +105,8 @@ TokenNext()
             goto Repeat;
         } break;
         
+        case '"': { ScanStr(); } break;
+        
         case 'a' ... 'z':
         case 'A' ... 'Z':
         case '_':
@@ -95,8 +133,9 @@ Token.Kind = token::kind::k; \
 #define _2(c1, k1, c2, k2)         _(c1, k1) __(c2, k2) break;
 #define _3(c1, k1, c2, k2, c3, k3) _(c1, k1) __(c2, k2) __(c3, k3) break;
         
-        _1('\0', NONE);
+        _1(0,   NONE);
         _1(',', COMMA);
+        _1(':', COLON);
         _1('{', BRACE_LEFT);
         _1('}', BRACE_RIGHT);
         
@@ -143,11 +182,10 @@ Name(token::kind Kind)
 char const *
 TokenInfo(token &Token)
 {
-    if(Token.Kind == token::kind::NAME)
+    switch(Token.Kind)
     {
-        return Token.NAME._;
-    } else
-    {
-        return Name(Token.Kind);
+        case token::kind::NAME:   { return Token.NAME._;   } break;
+        case token::kind::STRING: { return Token.STRING._; } break;
+        default: return Name(Token.Kind); break;
     }
 }

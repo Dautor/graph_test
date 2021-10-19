@@ -1,6 +1,6 @@
 
-A {}
-B {A, }
-C {B, A, }
-D {C, A, }
-E {A, }
+A {}       : "echo A"
+B {A, }    : "echo B"
+C {B, A, } : "echo C"
+D {C, A, } : "echo D"
+E {A, }    : "echo E"

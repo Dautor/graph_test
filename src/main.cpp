@@ -2,7 +2,6 @@
 // INCLUDES //-----------------------------------------------------------------------
 
 #include <stdio.h>
-#include <stdlib.h>
 #include "utilities.h"
 #include "parser.h"
 extern "C"
@@ -138,8 +137,9 @@ VerifySpread(node *A)
 static void
 Schedule(node *A)
 {
-    printf("Scheduling %s\n", A->Name);
-    // actually schedule A and only "Provide" once we are notified that it is done
+    printf("Scheduling %s:\n", A->Name);
+    printf("  \"%s\"\n", A->Rule);
+    // actually Provide once we are notified that the rule is done
     Provide(A);
 }
 
@@ -297,6 +297,12 @@ ParseConfig()
             ExpectToken(COMMA);
         }
         ExpectToken(BRACE_RIGHT);
+        if(MatchToken(COLON))
+        {
+            auto Rule = Token;
+            ExpectToken(STRING);
+            N->Rule = strndup(Rule.STRING._, Rule.STRING.Length);
+        }
     }
     return Result;
 }
@@ -308,7 +314,15 @@ main(s32 ArgCount, char const *Arg[], char const *Env[])
     // + Check for cycles
     //   - We should improve this once we are drawing things
     // + Construct graphs read from files
+    // + Parse rules
+    //   - Improve rule syntax
+    //   - Make it be just files or some other custom things and not like a custom shell language
+    //   - pipe + fork + close + dup2 + exec + wait
     // - Actually schedule things and add them to an event queue we wait on
+    //   - kqueue
+    //   + Dummy nodes that have no build rules but rather serve as a shorthand for multiple dependencies (you can depend on it instead of depending on all of the things it depends on
+    //     Useful for something like "all jails up"
+    //     - Give a warning if there exists such a node but which does not provide a rule
     // - Provide errors and explanations of why things were not started as they were specified
     // - Think about nodes that need to be started and stay running - like services
     // - Draw things (maybe use one of these libraries)

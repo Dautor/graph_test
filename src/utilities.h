@@ -2,8 +2,10 @@
 
 // INCLUDES //-----------------------------------------------------------------------
 
+#include <assert.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 // MACROS //-------------------------------------------------------------------------
 
@@ -71,6 +73,8 @@ struct node
         resolving,
         resolved,
     } CheckState;
+    
+    char const *Rule;
 };
 
 // EXTERNAL VARIABLES //-------------------------------------------------------------
@@ -83,4 +87,3 @@ node_list *NodeListAlloc(node *, node_list *);
 node      *NodeAlloc    (char const *Name);
 
 // INLINE PROCEDURES //--------------------------------------------------------------
-
