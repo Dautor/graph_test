@@ -13,6 +13,12 @@ extern "C"
 
 // MACROS //-------------------------------------------------------------------------
 // TYPES //--------------------------------------------------------------------------
+
+struct cli_config
+{
+    char const *GraphPath;
+};
+
 // INTERNAL PROCEDURE DECLARATIONS //------------------------------------------------
 
 static void Depends (node *, node *);
@@ -28,6 +34,9 @@ static void DependencyDone(node *, node *);
 static s32 Print_p(FILE *, printf_info const *, void const *const *Args);
 static s32 PrintFormatSingleArgument(printf_info const *, size_t N, s32 *ArgTypes);
 
+[[noreturn]] static void Usage(char const *Arg0);
+static void ParseConfig(cli_config *, s32 ArgCount, char const *Arg[], char const *Env[]);
+
 // INTERNAL VARIABLES //-------------------------------------------------------------
 
 static u32    Indentation = 0;
@@ -35,6 +44,30 @@ static const source_position SourcePositionBuiltin = {.Path="<builtin>"};
 
 // VARIABLES //----------------------------------------------------------------------
 // INTERNAL PROCEDURES //------------------------------------------------------------
+
+static void
+Usage(char const *Arg0)
+{
+    printf("usage: %s [--graph graph]\n", Arg0);
+    exit(1);
+}
+
+static inline void
+ParseConfig(cli_config *Config, s32 ArgCount, char const *Arg[], char const *Env[])
+{
+    (void)Env;
+    for(s32 i = 1; i < ArgCount; ++i)
+    {
+        if(strcmp(Arg[i], "--graph") == 0)
+        {
+            if(i == ArgCount-1) Usage(Arg[0]);
+            Config->GraphPath = Arg[++i];
+        } else
+        {
+            Usage(Arg[0]);
+        }
+    }
+}
 
 void
 _ExpectToken(token::kind Kind)
@@ -60,8 +93,10 @@ Verify(node *A)
     {
         case node::check_state::not_resolved:
         {
+#if 0
             printf("checking %s", A->Name);
             NewLine();
+#endif
             A->CheckState = node::check_state::resolving;
             for(auto i = A->Depends; i; i = i->Next)
             {
@@ -232,7 +267,7 @@ Find(node_list *L, char const *Name, size_t Length)
             return i;
         }
     }
-    return NodeListAlloc(NodeAlloc(Name), L);
+    return nullptr;
 }
 
 node_list *
@@ -267,18 +302,24 @@ ParseConfig()
 }
 
 s32
-main()
+main(s32 ArgCount, char const *Arg[], char const *Env[])
 {
     // TODO:
     // + Check for cycles
     //   - We should improve this once we are drawing things
-    // - Construct graph from a config
+    // + Construct graphs read from files
     // - Actually schedule things and add them to an event queue we wait on
     // - Provide errors and explanations of why things were not started as they were specified
     // - Think about nodes that need to be started and stay running - like services
     // - Draw things (maybe use one of these libraries)
     //   - https://github.com/Nelarius/imnodes
     //   - https://github.com/rokups/ImNodes
+    
+    cli_config CliConfig =
+    {
+        .GraphPath = "test_0.graph",
+    };
+    ParseConfig(&CliConfig, ArgCount, Arg, Env);
     
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -291,11 +332,10 @@ main()
     
     node Init = {.Name = "Init"};
     
-    char const *ConfigPath = "test_0.graph";
+    char const *ConfigPath = CliConfig.GraphPath;
     auto Config = FileMap(ConfigPath);
     Initialize(&Parser, ConfigPath, Config);
     
-#if 1
     auto Graph = ParseConfig();
     for(auto i = Graph; i; i = i->Next)
     {
@@ -306,31 +346,24 @@ main()
         }
     }
     
-#else
-    node A = {.Name = "A"};
-    node B = {.Name = "B"};
-    node C = {.Name = "C"};
-    node D = {.Name = "D"};
-    node E = {.Name = "E"};
-    
-    Depends(&A, &Init);
-    Depends(&B, &A);
-    Depends(&C, &A);
-    Depends(&C, &B);
-    Depends(&D, &A);
-    Depends(&D, &C);
-    Depends(&E, &A);
-#endif
-    
     if(VerifySpread(&Init) == false)
     {
         printf("Exiting...\n");
         exit(1);
     }
     printf("\n");
+    for(auto i = Graph; i; i = i->Next)
+    {
+        if(i->_->CheckState == node::check_state::not_resolved)
+        {
+            printf("%s is a part of a disconnected cycle\n", i->_->Name);
+        }
+    }
     
-    //Print(&Init);
-    //printf("\n");
+#if 0
+    Print(&Init);
+    printf("\n");
+#endif
     
     Provide(&Init);
     
