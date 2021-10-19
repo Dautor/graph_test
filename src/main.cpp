@@ -5,7 +5,10 @@
 #include <stdlib.h>
 #include "utilities.h"
 #include "parser.h"
+extern "C"
+{
 #include <printf.h>
+}
 #include <string.h>
 
 // MACROS //-------------------------------------------------------------------------
