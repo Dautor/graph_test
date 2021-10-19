@@ -1,4 +1,4 @@
 #!/bin/sh
 echo
-clang -Wno-dollar-in-identifier-extension -fdiagnostics-absolute-paths src/main.cpp -o build/graph
+clang -g -Wno-c99-designator -Wno-dollar-in-identifier-extension -fdiagnostics-absolute-paths -Wno-format-invalid-specifier src/main.cpp src/utilities.cpp src/parser.cpp -o build/graph
 build/graph
